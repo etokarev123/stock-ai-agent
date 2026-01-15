@@ -1,3 +1,4 @@
 polygon-api-client
 pandas
 pyarrow  # нужен для Parquet
+boto3
