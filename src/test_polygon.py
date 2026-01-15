@@ -5,7 +5,11 @@ from polygon import RESTClient
 from datetime import datetime
 
 # Вставь сюда свой настоящий API-ключ от Massive.com
-API_KEY = "WPF6ovyBgGtnpmNl6ItEEJCqofDf2XuT"
+import os
+API_KEY = os.getenv("POLYGON_API_KEY")
+if not API_KEY:
+    print("Ошибка: POLYGON_API_KEY не найден в переменных окружения!")
+    exit(1)
 
 # Создаём клиента Polygon
 client = RESTClient(api_key=API_KEY)
