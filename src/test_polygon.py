@@ -8,7 +8,7 @@ from datetime import datetime
 API_KEY = "твой_api_key_здесь_вместо_этого_текста"
 
 # Создаём клиента Polygon
-client = RESTClient(api_key=API_KEY)
+client = RESTClient(api_key=WPF6ovyBgGtnpmNl6ItEEJCqofDf2XuT)
 
 # Скачиваем дневные данные по Apple за 2025 год
 ticker = "AAPL"
