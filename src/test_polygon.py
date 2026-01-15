@@ -1,22 +1,27 @@
 # src/test_polygon.py
-# Тест Polygon + сохранение в Parquet (локально в /app/data/)
+# Тест Polygon + сохранение Parquet в Cloudflare R2
 
 import os
 import pandas as pd
 from polygon import RESTClient
 from datetime import datetime
+import boto3  # для S3-совместимого R2
 
-# Получаем API-ключ из переменных окружения
+# Получаем ключи из переменных Railway
 API_KEY = os.getenv("POLYGON_API_KEY")
-if not API_KEY:
-    print("Ошибка: POLYGON_API_KEY не найден!")
+R2_ACCESS_KEY = os.getenv("R2_ACCESS_KEY_ID")
+R2_SECRET_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
+R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
+R2_BUCKET = os.getenv("R2_BUCKET_NAME")
+
+if not all([API_KEY, R2_ACCESS_KEY, R2_SECRET_KEY, R2_ACCOUNT_ID, R2_BUCKET]):
+    print("Ошибка: не все переменные R2 или Polygon найдены!")
     exit(1)
 
-print("API-ключ найден, начинаем работу...")
+print("Ключи найдены, начинаем работу...")
 
 client = RESTClient(api_key=API_KEY)
 
-# Параметры
 ticker = "AAPL"
 start_date = "2025-01-01"
 end_date = datetime.now().strftime("%Y-%m-%d")
@@ -36,11 +41,9 @@ try:
     if aggs:
         print(f"Получено {len(aggs)} баров")
 
-        # Преобразуем в DataFrame
         data = []
         for bar in aggs:
-            timestamp_ms = bar.timestamp
-            timestamp_sec = timestamp_ms / 1000
+            timestamp_sec = bar.timestamp / 1000
             date = datetime.fromtimestamp(timestamp_sec)
             data.append({
                 "timestamp": date,
@@ -54,21 +57,30 @@ try:
         df = pd.DataFrame(data)
         df.set_index("timestamp", inplace=True)
 
-        # Показываем первые 5 строк
         print(df.head(5))
 
-        # Сохраняем в Parquet (локально в контейнере)
-        output_dir = "/app/data"
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = f"{output_dir}/{ticker}_daily.parquet"
-        df.to_parquet(output_path)
-        print(f"Данные сохранены в: {output_path}")
-        print(f"Размер файла: {os.path.getsize(output_path) / 1024:.2f} KB")
+        # Сохраняем локально для проверки (опционально)
+        local_path = f"/app/data/{ticker}_daily.parquet"
+        os.makedirs("/app/data", exist_ok=True)
+        df.to_parquet(local_path)
+        print(f"Локально сохранено: {local_path}")
+
+        # Загрузка в R2
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+            aws_access_key_id=R2_ACCESS_KEY,
+            aws_secret_access_key=R2_SECRET_KEY
+        )
+
+        r2_path = f"raw/{ticker}_daily.parquet"
+        s3_client.upload_file(local_path, R2_BUCKET, r2_path)
+        print(f"Файл загружен в R2: s3://{R2_BUCKET}/{r2_path}")
 
     else:
-        print("Нет данных за период.")
+        print("Нет данных.")
 
 except Exception as e:
-    print(f"Ошибка Polygon: {e}")
+    print(f"Ошибка: {e}")
 
 print("Скрипт завершён.")
