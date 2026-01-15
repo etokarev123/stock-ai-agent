@@ -5,10 +5,10 @@ from polygon import RESTClient
 from datetime import datetime
 
 # Вставь сюда свой настоящий API-ключ от Massive.com
-API_KEY = "твой_api_key_здесь_вместо_этого_текста"
+API_KEY = "WPF6ovyBgGtnpmNl6ItEEJCqofDf2XuT"
 
 # Создаём клиента Polygon
-client = RESTClient(api_key=WPF6ovyBgGtnpmNl6ItEEJCqofDf2XuT)
+client = RESTClient(api_key=API_KEY)
 
 # Скачиваем дневные данные по Apple за 2025 год
 ticker = "AAPL"
